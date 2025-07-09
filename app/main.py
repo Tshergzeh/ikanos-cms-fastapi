@@ -1,19 +1,16 @@
 from datetime import datetime
-from typing import Optional, Annotated
-from fastapi import FastAPI, Response, status, HTTPException, Depends, Query
+from typing import Annotated
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.concurrency import asynccontextmanager
 from fastapi.params import Body
-from pydantic import BaseModel
-import psycopg
-from psycopg_pool import ConnectionPool
 import sqlalchemy
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from app.config import settings
 
-# DB_URL = f"postgresql://{db_user}:{db_pass}@localhost:5432/{dbname}"
-DB_URL = f"postgresql+psycopg://{db_user}:{db_pass}@localhost:5432/{dbname}"
-# pool = ConnectionPool(conninfo=DB_URL, min_size=1, max_size=10)
+DB_URL = settings.database_url
+print("🎯 DATABASE_URL used by app:", settings.database_url)
 
-engine = create_engine(DB_URL)
+engine = create_engine(DB_URL, echo=True)
 
 class User(SQLModel, table=True):
     username: str = Field(primary_key=True, index=True)
@@ -84,6 +81,30 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+# @app.get("/test")
+# async def test_endpoint():
+#     return {"status": "ok"}
+
+@app.get("/health/db")
+def test_db(session: Session = Depends(get_session)):
+    print("✅ Running DB health check...")
+    with session.get_bind().connect() as conn:
+        db_name = conn.execute(sqlalchemy.text("SELECT current_database();")).scalar()
+        print("🎯 Connected to DB:", db_name)
+    try:
+        statement = select(Service).where(Service.is_published == True)
+        results = session.exec(statement).all()
+        return {
+            "success": True,
+            "record_count": len(results)
+        }
+    except Exception as e:
+        print("❌ DB Error:", e)
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 # Authentication and Authorization
 

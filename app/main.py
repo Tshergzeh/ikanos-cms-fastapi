@@ -9,7 +9,7 @@ from app.config import settings
 
 DB_URL = settings.database_url
 
-engine = create_engine(DB_URL, echo=True)
+engine = create_engine(DB_URL)
 
 class User(SQLModel, table=True):
     username: str = Field(primary_key=True, index=True)

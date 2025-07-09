@@ -9,10 +9,6 @@ from psycopg_pool import ConnectionPool
 import sqlalchemy
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-dbname = "ikanos_cms_modelled"
-db_user = "tshergzeh"
-db_pass = "chelseafc2013"
-
 # DB_URL = f"postgresql://{db_user}:{db_pass}@localhost:5432/{dbname}"
 DB_URL = f"postgresql+psycopg://{db_user}:{db_pass}@localhost:5432/{dbname}"
 # pool = ConnectionPool(conninfo=DB_URL, min_size=1, max_size=10)

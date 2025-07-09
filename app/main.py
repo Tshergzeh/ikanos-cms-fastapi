@@ -8,7 +8,6 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from app.config import settings
 
 DB_URL = settings.database_url
-print("🎯 DATABASE_URL used by app:", settings.database_url)
 
 engine = create_engine(DB_URL, echo=True)
 

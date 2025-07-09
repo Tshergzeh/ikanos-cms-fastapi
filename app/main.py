@@ -76,7 +76,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # create_db_and_tables()
+    create_db_and_tables()
     yield
 
 app = FastAPI(lifespan=lifespan)

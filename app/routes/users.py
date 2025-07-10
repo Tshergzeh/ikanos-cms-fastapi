@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 import sqlalchemy
 from sqlmodel import Session, select
 
-from app.models.user import User
+from app.models.user import User, UserCreate
 from app import db
+from app.utils.auth_utils import get_password_hash
 from ..utils.users_utils import get_user
 
 router = APIRouter()
@@ -32,10 +33,14 @@ def get_user_by_username(
 
 @router.post("/api/users", tags=["users"])
 def create_user(
-    user:User, 
+    user_create: UserCreate, 
     response: Response, 
     session: Session = Depends(db.get_session)):
     try:
+        user = user_create.model_dump()
+        user["hashed_password"] = get_password_hash(user_create.password)
+        user = User(**user)
+        print(user)
         session.add(user)
         session.commit()
         session.refresh(user)

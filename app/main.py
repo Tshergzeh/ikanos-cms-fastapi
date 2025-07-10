@@ -4,66 +4,18 @@ from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.concurrency import asynccontextmanager
 from fastapi.params import Body
 import sqlalchemy
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, create_engine, select
+
 from app.config import settings
+
+from app.models.user import User
+from app.models.service import Service, ServiceUpdate, ServiceApproveInput, ServiceApproveFinal
+from app.models.category import Category
+from app.models.project import Project
 
 DB_URL = settings.database_url
 
 engine = create_engine(DB_URL)
-
-class User(SQLModel, table=True):
-    username: str = Field(primary_key=True, index=True)
-    password: str = Field()
-    is_admin: bool | None = Field(default=False)
-
-class Service(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    title: str = Field()
-    description: str = Field()
-    image: str = Field()
-    created_by: str = Field()
-    last_modified_by: str = Field()
-    is_published: bool = Field(default=False)
-    approved_by: str | None = Field()
-    approved_at: datetime | None = Field()
-
-class ServiceUpdate(SQLModel):
-    title: str | None = None
-    description: str | None = None
-    image: str | None = None
-    last_modified_by: str 
-    is_published: bool = False
-
-class ServiceApproveInput(SQLModel):
-    approved_by: str 
-
-class ServiceApproveFinal(ServiceUpdate):
-    last_modified_by: str
-    is_published: bool = True
-    approved_by: str
-    approved_at: datetime = datetime.now()
-
-class Category(SQLModel, table=True):
-    category_id: int | None = Field(default=None, primary_key=True)
-    category_name: str = Field(index=True)
-
-class Project(SQLModel, table=True):
-    project_id: int | None = Field(default=None, primary_key=True)
-    project_image: str = Field()
-    category_id: int = Field(index=True)
-    created_by: str = Field()
-    last_modified_by: str = Field()
-    is_published: bool = Field(index=True, default=False)
-    approved_by: str | None = Field()
-    approved_at: datetime | None = Field()
-
-class ProjectUpdate(SQLModel):
-    project_image: str | None = None
-    category_id: str | None = None
-    last_modified_by: str | None = None
-    is_published: bool | None = None
-    approved_by: str | None = None
-    approved_at: datetime | None = None
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

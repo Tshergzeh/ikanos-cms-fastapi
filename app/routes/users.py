@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 import sqlalchemy
-from sqlmodel import select
+from sqlmodel import Session, select
 
 from app.models.user import User
 from app import db
+from ..utils.users_utils import get_user
 
 router = APIRouter()
 
 @router.get("/api/users", tags=["users"])
-def get_all_users(session: db.SessionDep):
+def get_all_users(session: Session = Depends(db.get_session)):
     users = session.exec(select(User)).all()
     secure_users = []
     for user in users:
@@ -23,23 +24,17 @@ def get_all_users(session: db.SessionDep):
     }
 
 @router.get("/api/users/{username}", tags=["users"])
-def get_user_by_username(username: str, session: db.SessionDep):
-    user = session.get(User, username)
-    if not user:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, f"User {username} does not exist"
-        )
-    return {
-        "success": True,
-        "message": "user details returned successfully",
-        "data": {
-            "username": f"{username}",
-            "is_admin": user.is_admin
-        }
-    }
+def get_user_by_username(
+    username: str, 
+    session: Session = Depends(db.get_session)
+):
+    return get_user(username, session)
 
 @router.post("/api/users", tags=["users"])
-def create_user(user:User, session: db.SessionDep, response: Response):
+def create_user(
+    user:User, 
+    response: Response, 
+    session: Session = Depends(db.get_session)):
     try:
         session.add(user)
         session.commit()
@@ -61,7 +56,10 @@ def create_user(user:User, session: db.SessionDep, response: Response):
     }
 
 @router.delete("/api/users/{username}", tags=["users"])
-def delete_user(username: str, session: db.SessionDep, response: Response):
+def delete_user(
+    username: str, 
+    response: Response, 
+    session: Session = Depends(db.get_session)):
     user = session.get(User, username)
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")

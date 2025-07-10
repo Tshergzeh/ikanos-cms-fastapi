@@ -1,27 +1,33 @@
-from fastapi import APIRouter, HTTPException
-from sqlmodel import select
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session
 
-from app.models.user import User
+from ..models.user import User
 from app import db
+from ..utils.auth_utils import verify_password, create_access_token
 
 router = APIRouter()
 
 @router.post("/api/auth/login", tags=["auth"])
-def login_user(user: User, session: db.SessionDep):
-    query = select(User).where(
-        User.username == user.username, 
-        User.password == user.password
-    )
-    valid_user = session.exec(query).first()
-    if not valid_user:
+def login_user(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(db.get_session)
+):
+    user = session.get(User, form_data.username)
+    if not user:
         raise HTTPException(
-            403, 
-            "Login failed. Invalid authentication details."
+            status.HTTP_401_UNAUTHORIZED, 
+            "Invalid credentials"
         )
+
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect password")
+    
+    access_token = create_access_token(data={"sub": user.username})
     return {
         "success": True,
-        "message": "You have been successfully logged in",
-        "data": "jwt_token"
+        "access_token": access_token,
+        "token_type": "bearer"
     }
     
 @router.post("/api/auth/logout", tags=["auth"])

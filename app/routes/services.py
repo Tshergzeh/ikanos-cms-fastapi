@@ -1,15 +1,19 @@
-from fastapi import APIRouter, HTTPException, Response, status
-from sqlmodel import select
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlmodel import Session, select
 from datetime import datetime
 
 from app.models.user import User
 from app.models.service import Service, ServiceUpdate, ServiceApproveInput
 from app import db
+from app.utils.auth_utils import get_current_user
 
 router = APIRouter()
 
 @router.get("/api/services", tags=["services"])
-def list_all_published_services(response: Response, session: db.SessionDep):
+def list_all_published_services(
+    response: Response, 
+    session: Session = Depends(db.get_session)
+):
     services = session.exec(
         select(Service).where(Service.is_published == True)
     ).all()
@@ -22,7 +26,14 @@ def list_all_published_services(response: Response, session: db.SessionDep):
     }
 
 @router.get("/api/admin/services", tags=["services"])
-def list_all_services(session: db.SessionDep, response: Response):
+def list_all_services(
+    response: Response, 
+    session: Session = Depends(db.get_session), 
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
+    
     services = session.exec(select(Service)).all()
     if not services:
         response.status_code = status.HTTP_204_NO_CONTENT
@@ -36,8 +47,12 @@ def list_all_services(session: db.SessionDep, response: Response):
 def create_new_service(
     service: Service, 
     response: Response, 
-    session: db.SessionDep
-    ):
+    session: Session = Depends(db.get_session),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
+    
     try:
         session.add(service)
         session.commit()
@@ -58,8 +73,12 @@ def create_new_service(
 def approve_service(
     id: int, 
     service_input: ServiceApproveInput, 
-    session: db.SessionDep
+    session: Session = Depends(db.get_session),
+    current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
+    
     service_db = session.get(Service, id)
     if not service_db:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Service not found")
@@ -86,7 +105,15 @@ def approve_service(
     }
 
 @router.patch("/api/admin/services/{id}", tags=["services"])
-def update_service(id: int, service: ServiceUpdate, session: db.SessionDep):
+def update_service(
+    id: int, 
+    service: ServiceUpdate, 
+    session: Session = Depends(db.get_session),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
+    
     service_db = session.get(Service, id)
     user = session.get(User, service.last_modified_by)
     if not (user):
@@ -114,7 +141,15 @@ def update_service(id: int, service: ServiceUpdate, session: db.SessionDep):
     }
 
 @router.delete("/api/admin/services/{id}", tags=["services"])
-def delete_service(id: int, session: db.SessionDep, response: Response):
+def delete_service(
+    id: int, 
+    response: Response, 
+    session: Session = Depends(db.get_session),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
+    
     service = session.get(Service, id)
     if not service:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Service not found")

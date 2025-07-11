@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 from app.models.user import User, UserCreate
 from app import db
-from app.utils.auth_utils import get_password_hash
+from app.utils.auth_utils import admin_check, get_password_hash
 from ..utils.users_utils import get_user
 
 router = APIRouter()
@@ -35,7 +35,9 @@ def get_user_by_username(
 def create_user(
     user_create: UserCreate, 
     response: Response, 
-    session: Session = Depends(db.get_session)):
+    session: Session = Depends(db.get_session),
+    current_user: User = Depends(admin_check)
+):
     try:
         user = user_create.model_dump()
         user["hashed_password"] = get_password_hash(user_create.password)
@@ -64,7 +66,8 @@ def create_user(
 def delete_user(
     username: str, 
     response: Response, 
-    session: Session = Depends(db.get_session)):
+    session: Session = Depends(db.get_session)
+):
     user = session.get(User, username)
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")

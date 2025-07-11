@@ -37,15 +37,3 @@ def logout_user():
         "success": True,
         "message": "User logged out successfully"
     }
-
-@router.get("/api/auth/me", tags=["auth"])
-def get_current_user():
-    return {
-        "success": True,
-        "message": "User details returned successfully",
-        "data": {
-            "username": "username",
-            "is_admin": "is_admin"
-        }
-    }
-

@@ -52,3 +52,8 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def admin_check(user: User = Depends(get_current_user)):
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admins only allowed")
+    

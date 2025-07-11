@@ -26,12 +26,8 @@ def list_all_categories(
 def add_category(
     category: Category, 
     response: Response, 
-    session: Session = Depends(db.get_session),
-    current_user: User = Depends(get_current_user)
-):
-    if not current_user.is_admin:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
-    
+    session: Session = Depends(db.get_session)
+):  
     try:
         session.add(category)
         session.commit()
@@ -52,12 +48,8 @@ def add_category(
 def delete_category(
     id: int, 
     response: Response,
-    session: Session = Depends(db.get_session),
-    current_user: User = Depends(get_current_user)
+    session: Session = Depends(db.get_session)
 ):
-    if not current_user.is_admin:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised")
-    
     category = session.get(Category, id)
     if not category:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
